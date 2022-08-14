@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id String @id @default(cuid())
+  username String @unique
+  sended_messages Message[] @relation("userFrom")
+  received_messages Message[] @relation("userTo")
+  groups UserGroup[]
+  sended_group_messages GroupMessage[]
+  created_at DateTime @default(now())
+}
+
+model Message {
+  id String @id @default(cuid())
+  text String
+  userFrom User @relation(fields: [userFromId], references: [id], name: "userFrom")
+  userFromId String
+  userTo User @relation(fields: [userToId], references: [id], name: "userTo")
+  userToId String
+  created_at DateTime @default(now())
+}
+
+model Group {
+  id String @id @default(cuid())
+  name String @unique
+  users UserGroup[]
+  messages GroupMessage[]
+  created_at DateTime @default(now())
+}
+
+model UserGroup {
+  id String @id @default(cuid())
+  user User @relation(fields: [userId], references: [id])
+  userId String
+  group Group @relation(fields: [groupId], references: [id])
+  groupId String
+  created_at DateTime @default(now())
+}
+
+model GroupMessage {
+  id String @id @default(cuid())
+  text String
+  user User @relation(fields: [userIdFrom], references: [id])
+  userIdFrom String
+  group Group @relation(fields: [groupIdTo], references: [id])
+  groupIdTo String
+  created_at DateTime @default(now())
+}
