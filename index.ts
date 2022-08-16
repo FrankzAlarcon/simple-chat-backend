@@ -39,7 +39,9 @@ io.on('connection', (socket) => {
   socket.on('new user',async (username: string) => {
     try {
       const userConnected = await newUser(socket, username);
-      socketsConnected.push({socketId: socket.id, username: userConnected.username}); 
+      if(!socketsConnected.some((socketConnected => socketConnected.username === username))) {
+        socketsConnected.push({socketId: socket.id, username: userConnected.username});         
+      }
       socket.emit('current user', userConnected, usersConnected.filter(user => user.username !== userConnected.username));
       socket.broadcast.emit('add user', usersConnected);
     } catch (error) {
@@ -62,13 +64,39 @@ io.on('connection', (socket) => {
     // Enviar a las rooms adecuadas
     const usernames = users.map(user => user.username);
     const usersOnline = socketsConnected.filter(user => usernames.includes(user.username));
+    socket.emit('group created', groupInfo);
     usersOnline.forEach(user => {
       socket.to(user.socketId).emit('added to group', groupInfo);
     });
   });
   
+  socket.on('enter to group', (groupId: string) => {
+    socket.join(groupId);
+  });
+
+  socket.on('leave group', (groupId: string) => {
+    socket.leave(groupId);
+  })
+
   socket.on('group message', async (data: MessageToGroup) => {
-    await newMessageToGroup(socket, data);
+    const message = await newMessageToGroup(socket, data);
+    socket.emit('sended group message', message);
+    socket.to(data.groupIdTo).emit('send group message', message);
+  });
+
+  socket.on('close session', () => {
+    console.log('User disconnected ' + socket.id);
+    const socketIndex = socketsConnected.findIndex(currentSocket => currentSocket.socketId === socket.id);
+    const currentSocket = socketsConnected[socketIndex];
+    if (socketIndex !== -1) {
+      socketsConnected.splice(socketIndex, 1);
+    }
+    if(!currentSocket) return;
+    const userIndex = usersConnected.findIndex(user => user.username === currentSocket.username);
+    if (userIndex !== -1) {
+      usersConnected.splice(userIndex, 1);
+    }
+    io.emit('remove user', usersConnected);
   });
 
   socket.on('disconnect', () => {

@@ -21,7 +21,6 @@ export const newMessageToUser = async (socket: Socket, data: MessageToUser) => {
 }
 
 export const newMessageToGroup = async (socket: Socket, data: MessageToGroup) => {  
-  await messageService.sendMessageToGroup(data);
-
-  socket.to(data.groupIdTo).emit('send group message', data.text);
+  const message = await messageService.sendMessageToGroup(data);
+  return message;
 }

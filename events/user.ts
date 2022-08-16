@@ -20,7 +20,8 @@ export const newUser = async (socket: Socket, username: string) => {
   }
   const groups = await groupService.getUserGroups(user.id);
   const completeUser = {...user, groups}
-  usersConnected.push(completeUser);
-
+  if(!usersConnected.some(userConnected => userConnected.username === user.username)) {
+    usersConnected.push(completeUser);
+  }
   return completeUser;
 }
